@@ -1,23 +1,25 @@
 # Fájlstruktúra
--**/api**
-    -`router.php`
-   -`config.php`
-   -`db.php`
-   -`functions.php`
-   -`auth.php`
-   -`admins.php`
-   -`keys.php`
-   -`readers.php`
-   -`readlog.php`
-   -`access.php`
+```
+/api
+├── router.php
+├── config.php
+├── db.php
+├── functions.php
+├── auth.php
+├── admins.php
+├── keys.php
+├── readers.php
+├── readlog.php
+└── access.php
+```
 
-## admin jelszó generálás
+## Admin jelszó generálás
 
 ```php
 $hash = password_hash($password, PASSWORD_DEFAULT);
 ```
 
-## login ellenőrzés
+## Login ellenőrzés
 
 ```php
 if (!password_verify($inputPassword, $row['pass'])) {
@@ -32,9 +34,9 @@ $decrypted = decrypt_data($input);
 list($readerId, $rfid) = explode(";", $decrypted);
 ```
 
-## ARDUINO --> API
+## ARDUINO → API
 
-``` c++
+```cpp
 plaintext = readerId + ";" + RFID
 encrypted = AES-256-CBC encrypt(plaintext, shared_key)
 POST /api/access/check
