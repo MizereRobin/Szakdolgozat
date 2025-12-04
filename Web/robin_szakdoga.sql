@@ -38,10 +38,6 @@ CREATE TABLE `admins` (
 -- A tábla adatainak kiíratása `admins`
 --
 
-INSERT INTO `admins` (`id`, `name`, `pass`, `role`) VALUES
-(1, 'admin1', '*6D45FD76D5E9C6A404E39C25106A7F0', 1),
-(2, 'admin2', '*0E6FD44C7B722784DAE6E67EF8C06FB', 2);
-
 -- --------------------------------------------------------
 
 --
