@@ -139,6 +139,28 @@ function GetAllUsers(): array {
     return $users;
 }
 
+// function GetAccess(int $readerID, int $cardID){
+//     global $conn;
+//     $sql = "SELECT count(u.id) FROM users u inner join readers r on u.role = reader.role WHERE id = ?";
+//     $stmt = $conn->prepare($sql);
+//     $stmt->bind_param("i", $id);
+//     $stmt->execute();
+//     $result = $stmt->get_result();
+
+//     if ($result->num_rows > 0) {
+//         $row = $result->fetch_assoc();
+//         return new Reader(
+//             intval($row["id"]),
+//             $row["name"],
+//             boolval($row["active"]),
+//             intval($row["role"]),
+//             $row["from_date"],
+//             $row["to_date"],
+//             boolval($row["role_abs"])
+//         );
+//     }
+//     return null;
+// }
 function GetUserById(int $id): ?User {
     global $conn;
     $sql = "SELECT id, name, rfid, role FROM users WHERE id = ?";
@@ -158,6 +180,23 @@ function GetUserById(int $id): ?User {
     }
     return null;
 }
+function GetUserRoleByRFID(int $rfid){
+    global $conn;
+
+    $sql = "SELECT role FROM users WHERE rfid = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $rfid);
+    $stmt->execute();
+
+    $result = $stmt->get_result();
+
+    if ($row = $result->fetch_assoc()) {
+        return $row['role'];
+    }
+
+    return null;
+}
+
 function GetReaderById(int $id): ?Reader {
     global $conn;
     $sql = "SELECT id, name, active, role, from_date, to_date, role_abs FROM readers WHERE id = ?";
