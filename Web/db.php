@@ -96,11 +96,31 @@ class User{
 
 
 }
+function GetAllLogs(): array {
+    global $conn;
+    $logs = [];
+    $sql = "SELECT * FROM reader_logs";
+    $result = $conn->query($sql);
+
+    if ($result && $result->num_rows > 0) {
+        while ($row = $result->fetch_assoc()) {
+            $logs[] = [
+                "id"        => $row["id"],
+                "reader_id" => $row["reader_id"],
+                "user_id"   => $row["user_key_id"], // nálad így van az oszlopnév
+                "time"      => $row["time"],
+                "success"   => $row["success"]
+            ];
+        }
+    }
+
+    return $logs;
+}
 
 function GetAllReaders(): array {
     global $conn;
     $readers = [];
-    $sql = "SELECT id, name, active, role, from_date, to_date, role_abs FROM readers";
+    $sql = "SELECT * FROM readers";
     $result = $conn->query($sql);
 
     if ($result->num_rows > 0) {
@@ -110,8 +130,8 @@ function GetAllReaders(): array {
                 $row["name"],
                 boolval($row["active"]),
                 intval($row["role"]),
-                $row["from_date"],
-                $row["to_date"],
+                $row["from"],
+                $row["to"],
                 boolval($row["role_abs"])
             );
             $readers[] = $reader;
@@ -196,10 +216,24 @@ function GetUserRoleByRFID(int $rfid){
 
     return null;
 }
+function GetAccess(int $readerID, int $rfid){
+    $userRole = GetUserRoleByRFID($rfid);
+    $currentReader = GetReaderById($readerID);
+    $readerRole = $currentReader->GetRole();
+    $readerIsActive = $currentReader->IsActive();
+    $readerIsAbs = $currentReader->IsRoleAbs();
 
+    if($readerIsActive){
+        if($readerIsAbs){
+            if($userRole == $readerRole){return 1;} return 0;
+        }
+        if($userRole >= $readerRole){return 1;} return 0;
+    }
+    return 0;
+}
 function GetReaderById(int $id): ?Reader {
     global $conn;
-    $sql = "SELECT id, name, active, role, from_date, to_date, role_abs FROM readers WHERE id = ?";
+    $sql = "SELECT * from readers WHERE id = ?";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("i", $id);
     $stmt->execute();
@@ -212,12 +246,25 @@ function GetReaderById(int $id): ?Reader {
             $row["name"],
             boolval($row["active"]),
             intval($row["role"]),
-            $row["from_date"],
-            $row["to_date"],
+            $row["from"],
+            $row["to"],
             boolval($row["role_abs"])
         );
     }
     return null;
+}
+function GetAllAdmins(){
+    #Másold át a log-ból az közelebb áll mindenhez is
+}
+function AddAdmin(string $name, string $pass, int $role): int{
+    global $conn;
+    $sql = "INSERT INTO admins (name, pass, role) VALUES (?, ?, ?)";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("ssi", $name, $pass, $role);
+    if ($stmt->execute()) {
+        return $stmt->insert_id;
+    }
+    return -1;
 }
 function AddUser(string $name, string $rfid, int $role): int {
     global $conn;
@@ -248,12 +295,12 @@ function UpdateUser(int $id, string $name, string $rfid, int $role): bool {
     $stmt->bind_param("ssii", $name, $rfid, $role, $id);
     return $stmt->execute();
 }
-function UpdateReader(int $id, string $name, bool $active, int $role, string $from, string $to, bool $role_abs): bool {
+function UpdateReader(int $id, string $name, int $active, int $role, string $from, string $to, int $role_abs): bool {
     global $conn;
-    $sql = "UPDATE readers SET name = ?, active = ?, role = ?, from_date = ?, to_date = ?, role_abs = ? WHERE id = ?";
+    $sql = "UPDATE readers SET name = ?, active = ?, `role` = ?, `from` = ?, `to` = ?, role_abs = ? WHERE id = ?";
     $stmt = $conn->prepare($sql);
-    $activeInt = $active ? 1 : 0;
-    $roleAbsInt = $role_abs ? 1 : 0;
-    $stmt->bind_param("siisssi", $name, $activeInt, $role, $from, $to, $roleAbsInt, $id);
+    #$activeInt = $active ? 1 : 0;
+    #$roleAbsInt = $role_abs ? 1 : 0;
+    $stmt->bind_param("siisssi", $name, $active, $role, $from, $to, $roleAbs, $id);
     return $stmt->execute();
 }

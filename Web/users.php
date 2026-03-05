@@ -1,15 +1,17 @@
 <?php
-require "login.php";
-require "db.php"
-include "nav.php"
+$title="Users";
+#require "login.php";
+//require 'db.php';
+include 'nav.php';
 
-echo('<table class="table table-striped table-hover">
+echo('<table class="table table-dark table-striped table-hover" style="margin:5%;width:90%">
 <thead>
     <tr>
       <th scope="col">ID</th>
       <th scope="col">Name</th>
       <th scope="col">RFID</th>
       <th scope="col">Role</th>
+      <th scope="col"></th>
     </tr>
   </thead>
   <tbody>');
@@ -19,6 +21,9 @@ foreach (GetAllUsers() as $user) {
     <td>'.$user->GetName().'</td>
     <td>'.$user->GetRfid().'</td>
     <td>'.$user->GetRole().'</td>
+    <td style="width:5%;">
+      <a href="editUser.php?id='.$user->GetId().'"><button type="button" class="btn btn-warning">Modify</button></a>
+    </td>
   </tr>');
 }
 echo(' </tbody>
