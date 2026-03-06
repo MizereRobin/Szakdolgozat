@@ -1,9 +1,11 @@
 <?php
 $id = $_GET["id"] ?? null;
 $title="Edit User";
+
+require_once 'login.php';
 include_once 'nav.php';
 require_once 'db.php';
-require_once 'login.php';
+
 if($role !== 1){
     header('HTTP/1.0 401 Unauthorized');
     exit("Admin role not correct.");

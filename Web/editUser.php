@@ -1,9 +1,10 @@
 <?php
 $id = $_GET["id"] ?? null;
 $title="Edit User";
+
+require_once 'login.php';
 include_once 'nav.php';
 require_once 'db.php';
-require_once 'login.php';
 
 if (!$id) {
     exit("Missing user id");

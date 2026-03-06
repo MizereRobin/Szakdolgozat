@@ -1,8 +1,9 @@
 <?php
 $title="Readers";
+
+require_once 'login.php';
 include_once 'nav.php';
 require_once 'db.php';
-require_once 'login.php';
 
 echo('<table class="table table-dark table-striped table-hover" style="margin:5%;width:90%">
 <thead>

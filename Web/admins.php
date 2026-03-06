@@ -1,7 +1,9 @@
 <?php
+require_once 'login.php';
 include_once 'nav.php';
 require_once 'db.php';
-require_once 'login.php';
+
+
 
 if($role !== 1){
     header('HTTP/1.0 401 Unauthorized');
@@ -18,7 +20,7 @@ echo('<table class="table table-dark table-striped table-hover" style="margin:5%
     </tr>
   </thead>
   <tbody>');
-  foreach ($admins as $admin) {
+  foreach (GetAllAdmins() as $admin) {
     echo('<tr>
     <th scope="row">'.$admin["id"].'</th>
     <td>'.$admin["name"].'</td>

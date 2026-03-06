@@ -1,8 +1,9 @@
 <?php
 $title="Users";
+
+require_once 'login.php';
 include_once 'nav.php';
 require_once 'db.php';
-require_once 'login.php';
 
 echo('<table class="table table-dark table-striped table-hover" style="margin:5%;width:90%">
 <thead>
@@ -21,8 +22,9 @@ foreach (GetAllUsers() as $user) {
     <td>'.$user->GetName().'</td>
     <td>'.$user->GetRfid().'</td>
     <td>'.$user->GetRole().'</td>
-    <td style="width:5%;">
+    <td style="width:10%;">
       <a href="editUser.php?id='.$user->GetId().'"><button type="button" class="btn btn-warning">Modify</button></a>
+      <a href="delete.php?type=user&id='.$user->GetId().'"><button type="button" class="btn btn-danger">Delete</button></a>
     </td>
   </tr>');
 }

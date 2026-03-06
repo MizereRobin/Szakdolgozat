@@ -162,7 +162,7 @@ function GetAllAdmins(): array{
     #Másold át a log-ból az közelebb áll mindenhez is
     global $conn;
     $admins = [];
-    $sql = "SELECT id, name, rfid, role FROM users";
+    $sql = "SELECT * FROM admins";
     $result = $conn->query($sql);
 
     if ($result && $result->num_rows > 0) {
@@ -336,4 +336,15 @@ function RemoveReader(int $id): bool {
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("i", $id);
     return $stmt->execute();
+}
+
+function RemoveAdmin(int $id): bool {
+    if (!isset($_SESSION['role']) || $_SESSION['role'] != 1) return false;
+    else{
+    global $conn;
+    $sql = "DELETE FROM admins WHERE id = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $id);
+    return $stmt->execute();
+    }
 }
