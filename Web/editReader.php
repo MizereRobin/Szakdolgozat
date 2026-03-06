@@ -2,7 +2,9 @@
 
 $id = $_GET["id"];
 $title = "Edit Reader";
-include 'nav.php';
+include_once 'nav.php';
+require_once 'db.php';
+require_once 'login.php';
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
 

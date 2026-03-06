@@ -1,6 +1,5 @@
 <?php
-require 'login.php';
-// require 'db.php';
+require_once 'db.php';
 $role = $_SESSION["role"];
 
 

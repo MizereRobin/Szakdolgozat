@@ -158,6 +158,25 @@ function GetAllUsers(): array {
     }
     return $users;
 }
+function GetAllAdmins(): array{
+    #Másold át a log-ból az közelebb áll mindenhez is
+    global $conn;
+    $admins = [];
+    $sql = "SELECT id, name, rfid, role FROM users";
+    $result = $conn->query($sql);
+
+    if ($result && $result->num_rows > 0) {
+        while ($row = $result->fetch_assoc()) {
+            $admins[] = [
+                "id"        => $row["id"],
+                "name" => $row["name"],
+                "pass"   => $row["pass"],
+                "role"      => $row["role"]
+            ];// id name pass role
+        }
+    }
+    return $admins;
+}
 
 // function GetAccess(int $readerID, int $cardID){
 //     global $conn;
@@ -253,9 +272,7 @@ function GetReaderById(int $id): ?Reader {
     }
     return null;
 }
-function GetAllAdmins(){
-    #Másold át a log-ból az közelebb áll mindenhez is
-}
+
 function AddAdmin(string $name, string $pass, int $role): int{
     global $conn;
     $sql = "INSERT INTO admins (name, pass, role) VALUES (?, ?, ?)";
@@ -295,12 +312,28 @@ function UpdateUser(int $id, string $name, string $rfid, int $role): bool {
     $stmt->bind_param("ssii", $name, $rfid, $role, $id);
     return $stmt->execute();
 }
+
+function RemoveUser(int $id): bool {
+    global $conn;
+    $sql = "DELETE FROM users WHERE id = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $id);
+    return $stmt->execute();
+}
 function UpdateReader(int $id, string $name, int $active, int $role, string $from, string $to, int $role_abs): bool {
     global $conn;
     $sql = "UPDATE readers SET name = ?, active = ?, `role` = ?, `from` = ?, `to` = ?, role_abs = ? WHERE id = ?";
     $stmt = $conn->prepare($sql);
-    #$activeInt = $active ? 1 : 0;
-    #$roleAbsInt = $role_abs ? 1 : 0;
-    $stmt->bind_param("siisssi", $name, $active, $role, $from, $to, $roleAbs, $id);
+    $activeInt = $active ? 1 : 0;
+    $roleAbsInt = $role_abs ? 1 : 0;
+    $stmt->bind_param("siisssi", $name, $activeInt, $role, $from, $to, $roleAbsInt, $id);
+    return $stmt->execute();
+}
+//Nem vagyok benne biztos, hogy kellene törölni olyan olvasókat, akiknek már vannak logjai
+function RemoveReader(int $id): bool {
+    global $conn;
+    $sql = "DELETE FROM readers WHERE id = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $id);
     return $stmt->execute();
 }
