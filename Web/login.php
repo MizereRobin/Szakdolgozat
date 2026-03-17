@@ -5,9 +5,7 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
 
-// Ha már be van jelentkezve session alapján, ne kérj újra Basic Authot
 if (!empty($_SESSION["IsAuth"]) && $_SESSION["IsAuth"] === true) {
-    // Biztonsági okból: ha role/username hiányzik, töröljük és újra autentikálunk
     if (!isset($_SESSION["role"]) || !isset($_SESSION["username"])) {
         $_SESSION = [];
     } else {
@@ -38,14 +36,11 @@ if ($result->num_rows !== 1) {
 
 $row = $result->fetch_assoc();
 
-// Ha a DB-ben még régi (csillagos) hash van, ez itt false lesz.
-// Biztonságos rendszerhez a pass mezőnek $2y$... vagy $argon2id$... kezdetűnek kell lennie.
 if (!password_verify($password, $row["pass"])) {
     header('HTTP/1.0 401 Unauthorized');
     exit("Invalid credentials.");
 }
 
-// Session fixation ellen
 session_regenerate_id(true);
 
 $_SESSION["IsAuth"] = true;
@@ -53,6 +48,5 @@ $_SESSION["username"] = $username;
 $_SESSION["role"] = (int)$row["role"];
 $_SESSION["admin_id"] = (int)$row["id"];
 
-// Fontos: írjuk ki a sessiont, mielőtt továbbmegyünk a többi include-ba
 session_write_close();
 return;
