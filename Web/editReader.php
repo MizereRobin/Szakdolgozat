@@ -2,10 +2,12 @@
 
 $id = $_GET["id"];
 $title = "Edit Reader";
-
 require_once 'login.php';
 include_once 'nav.php';
 require_once 'db.php';
+
+
+$logs = GetLogByReaderId($id);
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
@@ -75,9 +77,16 @@ $reader = GetReaderById($id);
 </select>
 </div>
 
+<div class="mb-3">
+<label class="form-label">
+Number of LOG rows with reader: <?= $logs ?> times
+</label>
+</div>
+
+
 <button type="submit" class="btn btn-primary">Save</button>
 <a href="readers.php" class="btn btn-secondary">Back</a>
-<!-- Itt hívnám a PHP függvényt valahol -->
+<a href="delete.php?type=reader&id=<?=$id?>" class="btn btn-danger <?=$logs>0? "disabled":"" ?>">Delete</a>
 </form>
 
 </div>

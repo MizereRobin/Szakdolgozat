@@ -1,24 +1,35 @@
 #include <WiFi.h>
 #include <Wire.h>
+#include <HTTPClient.h>
 #include <Adafruit_PN532.h>
+#include <Preferences.h>
 
 ////////////////////////////////////
 ///////   PIN beállítások   ////////
 ////////////////////////////////////
 const String SSID= "Test12345";
 const String PASS= "123456789";
+
 // Jobb oldal
 const int buzzer = 5; // piezzo csopogó - piros vagy fehér, még nem döntöttem el
 const int lock = 17;  // elektromos zár - lila
 const int accessTrue = 18; // zöld
 const int accessFalse = 19; // piros
-const int SCL = 22; //PN532 - sárga
-const int SDA = 23; //PN532 - zöld
+const int SCL_pin = 22; //PN532 - sárga
+const int SDA_pin = 23; //PN532 - zöld
 
 // Bal oldal
 const int WifiGreen = 25;
 const int WifiYellow = 26;
 const int WifiRed = 27;  
+
+
+
+static int ID = -1;
+static int ROLE = -1;
+static bool ACTIVE = false;
+
+
 
 
 ////////////////////////////////////
@@ -36,6 +47,25 @@ class WifiManager {
       password = pass;
     }
     int state;
+    int GetNewID(String url) {
+      HTTPClient http;
+
+      http.begin(url);
+      int httpCode = http.GET();
+
+      if (httpCode != 200) {
+        http.end();
+        return -1;
+      }
+
+      String payload = http.getString();
+      http.end();
+
+      payload.trim();
+      return payload.toInt();
+    }
+    
+    //Reader GetData{ minden adatot lekér ami a reader osztálynak kell és visszatér egy Reader elemmel.
 
     void Begin() {
       Serial.println();
@@ -91,8 +121,6 @@ class WifiManager {
 ////////////////////////////////////
 class OutputManager{
   public:
-    void NetWorkLED(int status);
-    void Access(bool success);
     OutputManager(){}
 
   void NetWorkLED(int status){
@@ -153,7 +181,7 @@ class PN {
     PN() : nfc(-1, -1) {}
 
     void Begin() {
-      Wire.begin(SDA, SCL);
+      Wire.begin(SDA_pin, SCL_pin);
       nfc.begin();
 
       uint32_t versiondata = nfc.getFirmwareVersion();
@@ -193,44 +221,78 @@ class PN {
 };
 
 
+////////// Prefs külön, hogy a Reader osztály tudjon rá hivatkozni
+
+static Preferences prefs;
+
+
 ////////////////////////////////////
 ///////   Saját beállítás   ////////
 ////////////////////////////////////
 class Reader {
-  private:
-    int id;
-    String name;
-    bool active;
-    String from;
-    String to;
-    int role;
+  static int ID = -1;
+  static String NAME = "";
+  static bool ACTIVE = false;
+  static String FROM = "00:00";
+  static String TO = "23:59";
+  static int ROLE = -1;
 
   public:
     Reader() {}
     Reader(String INid, String INname, String INactive, String INfrom, String INto, String INrole){
-      id = INid.toInt();
-      name = INname;
-      active = INactive == "1" ? true : false;
-      from = INfrom;
-      to = INto;
-      role = INrole.toInt();
+      ID = INid.toInt();
+      NAME = INname;
+      ACTIVE = INactive == "1" ? true : false;
+      FROM = INfrom;
+      TO = INto;
+      ROLE = INrole.toInt();
+    }
+    /////// config Mentése
+    void save() {
+      prefs.begin("reader", false);
+
+      prefs.putInt("id", id);
+      prefs.putString("name", name);
+      prefs.putBool("active", active);
+      prefs.putString("from", from);
+      prefs.putString("to", to);
+      prefs.putInt("role", role);
+
+      prefs.end();
     }
 
-  void GetData(){
+    ///// Config Betöltése
+    void load() {
+      prefs.begin("reader", true);   // true = read-only
 
-  }
-  void Logic(){
+      id     = prefs.getInt("id", 0);
+      name   = prefs.getString("name", "");
+      active = prefs.getBool("active", false);
+      from   = prefs.getString("from", "00:00");
+      to     = prefs.getString("to", "23:59");
+      role   = prefs.getInt("role", 0);
 
-  }
+      prefs.end();
+    }
+
+
+    void Logic(){
+
+    }
 };
 
-Pn pn;
-Reader thisReader;
+/////// Osztály objektumok létrehozása ////////
+static WifiManager wifimanager(SSID,PASS);
+static PN pn;
+static Reader thisReader;
+
+static String GetIdURL = "http://www.szakdolgozat.robin-mizere.hu/newreader?type=0";
+static String GetReaderDataURL = "http://www.szakdolgozat.robin-mizere.hu/readerdata?id="+String(ID);
 
 void setup() {
   Serial.begin(115200);
   delay(1000);
-
+  thisReader.load();
 
   Serial.println("Pinek beallitasa...");
 
@@ -244,13 +306,21 @@ void setup() {
 
   Serial.println("Pinek beallitasa sikeres.");
 
-  WifiManager wifimanager(SSID,PASS);
+  
   wifimanager.Begin();
-
+  
+  if(ID < 1){
+    ID = wifimanager.GetNewID(GetIdURL);
+    thisReader.id = ID;
+    thisReader.save();
+    GetReaderDataURL = "http://www.szakdolgozat.robin-mizere.hu/readerdata?id="+String(ID);
+  }
+  
   pn.Begin();
 
 }
 
 void loop() {
+  if(ACTIVE)
 
 }

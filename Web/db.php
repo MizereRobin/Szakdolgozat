@@ -250,6 +250,17 @@ function GetAccess(int $readerID, int $rfid){
     }
     return 0;
 }
+function GetLastReader(): ?int {
+    global $conn;
+    $sql = "SELECT MAX(id) FROM readers";
+    
+    $stmt = $conn->prepare($sql);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result->fetch_row();
+    return isset($row[0]) ? (int)$row[0] : null;
+}
+
 function GetReaderById(int $id): ?Reader {
     global $conn;
     $sql = "SELECT * from readers WHERE id = ?";
@@ -293,13 +304,11 @@ function AddUser(string $name, string $rfid, int $role): int {
     }
     return -1;
 }
-function AddReader(string $name, bool $active, int $role, string $from, string $to, bool $role_abs): int {
+function AddReader(string $name): int {
     global $conn;
-    $sql = "INSERT INTO readers (name, active, role, from_date, to_date, role_abs) VALUES (?, ?, ?, ?, ?, ?)";
+    $sql = "INSERT INTO readers (name) VALUES (?)";
     $stmt = $conn->prepare($sql);
-    $activeInt = $active ? 1 : 0;
-    $roleAbsInt = $role_abs ? 1 : 0;
-    $stmt->bind_param("siisss", $name, $activeInt, $role, $from, $to, $roleAbsInt);
+    $stmt->bind_param("s", $name);
     if ($stmt->execute()) {
         return $stmt->insert_id;
     }
@@ -328,6 +337,17 @@ function UpdateReader(int $id, string $name, int $active, int $role, string $fro
     $roleAbsInt = $role_abs ? 1 : 0;
     $stmt->bind_param("siisssi", $name, $activeInt, $role, $from, $to, $roleAbsInt, $id);
     return $stmt->execute();
+}
+function GetLogByReaderId(int $id) : int {
+    global $conn;
+    $sql = "SELECT COUNT(*) FROM reader_logs WHERE reader_id = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result->fetch_row();
+    return (int)$row[0];
+    
 }
 //Nem vagyok benne biztos, hogy kellene törölni olyan olvasókat, akiknek már vannak logjai
 function RemoveReader(int $id): bool {
