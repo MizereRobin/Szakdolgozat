@@ -16,7 +16,7 @@ if ($conn->connect_error) {
 echo "<script>console.log('Database Connected successfully');</script>";
 
 class Reader{
-    private int $id;
+    public int $id;
     private string $name;
     private bool $active;
     private int $role;
@@ -366,5 +366,18 @@ function RemoveAdmin(int $id): bool {
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("i", $id);
     return $stmt->execute();
+    }
+}
+function IsLoggedIn(string $adminname){
+    if (!isset($_SESSION['role'])) return false;
+    else{
+    global $conn;
+    $sql = "SELECT logged FROM admins WHERE name = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("s", $adminname);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result->fetch_row();
+    return (int)$row[0];
     }
 }
