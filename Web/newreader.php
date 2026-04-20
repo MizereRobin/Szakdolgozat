@@ -10,5 +10,5 @@ if($add){
         echo($new_id."\n\n\nSikeres hozzáadás");
     }
 } else {
-    echo($last_id);
+    echo("#".$last_id);
 }

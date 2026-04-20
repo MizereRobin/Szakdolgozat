@@ -42,21 +42,34 @@ class WifiManager {
     int state;
 
     int GetNewID(String url) {
+      Serial.println("Új id kérése...");
       HTTPClient http;
 
+      Serial.println("http.begin");
       http.begin(url);
       int httpCode = http.GET();
 
       if (httpCode != 200) {
+        Serial.println("httpcode != 200 (httpcode:"+String(httpCode)+String(")"));
         http.end();
         return -1;
       }
 
+      Serial.println("http sikeres...");
       String payload = http.getString();
+      Serial.println("http.getstring: "+payload);
       http.end();
 
-      payload.trim();
-      return payload.toInt();
+      int pos = payload.indexOf('#');
+
+      String result = "";
+      if (pos >= 0) {
+        result = payload.substring(pos + 1);
+      }
+
+      result.trim();
+      Serial.println("Új id: "+result);
+      return result.toInt();
     }
 
     void GetData();
@@ -118,7 +131,7 @@ class OutputManager{
   public:
     OutputManager(){}
 
-    void NetWorkLED(int status){
+    void NetworkLED(int status){
       switch(status){
         case 1:
           digitalWrite(WifiGreen, HIGH);
@@ -196,9 +209,11 @@ class PN {
       uint8_t uid[] = {0, 0, 0, 0, 0, 0, 0};
       uint8_t uidLength;
 
+      Serial.println("PN532 olvas...");
       bool success = nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, uid, &uidLength, 50);
 
       if (!success) {
+        Serial.println("Nincs kártya...");
         return "";
       }
 
@@ -212,6 +227,7 @@ class PN {
       }
 
       result.toUpperCase();
+      Serial.println("Olvasás sikeres. UID: "+result);
       return result;
     }
 };
@@ -442,8 +458,8 @@ class Reader {
       prefs.end();
     }
 
-    void Logic() {
-
+    void Logic(String tag) {
+      
     }
 };
 
@@ -456,18 +472,20 @@ String Reader::TO = "23:59";
 int Reader::ROLE = -1;
 
 //////// Linkek
-static String GetIdURL = "http://www.szakdolgozat.robin-mizere.hu/newreader?type=0";
+static String GetIdURL = "http://szakdolgozat.robin-mizere.hu/newreader.php?type=0";
 static String GetReaderDataURL = "";
 
 /////// Osztály objektumok létrehozása ////////
 static WifiManager wifimanager(SSID,PASS);
 static PN pn;
 static Reader thisReader;
+static OutputManager outputmanager;
 static TimeManager timeManager("pool.ntp.org", 3600, 3600);
 
 void WifiManager::GetData() {
   if (Reader::ID < 1) {
-    Serial.println("Ervenytelen Reader ID.");
+    Serial.println("Ervenytelen Reader ID. "+Reader::ID);
+    GetNewID(GetIdURL);
     return;
   }
 
@@ -482,15 +500,28 @@ void WifiManager::GetData() {
   if (httpCode != 200) {
     Serial.print("HTTP hiba: ");
     Serial.println(httpCode);
+    if(httpCode == -1){
+      outputmanager.NetworkLED(3);
+    }
     http.end();
     return;
+  }
+  else{
+    outputmanager.NetworkLED(1);
   }
 
   String payload = http.getString();
   http.end();
+  int pos = payload.indexOf('#');
 
+  String result = "";
+  if (pos >= 0) {
+    result = payload.substring(pos + 1);
+  }
+  payload = result;
   Serial.println("Kapott JSON:");
   Serial.println(payload);
+
 
   DynamicJsonDocument doc(768);
   DeserializationError error = deserializeJson(doc, payload);
@@ -522,6 +553,24 @@ void WifiManager::GetData() {
   Serial.print("TO: ");
   Serial.println(Reader::TO);
 }
+void AllLedOn()
+{
+  digitalWrite(accessTrue, HIGH);
+  digitalWrite(accessFalse, HIGH);
+  digitalWrite(WifiRed, HIGH);
+  digitalWrite(WifiYellow, HIGH);
+  digitalWrite(WifiGreen, HIGH);
+  digitalWrite(lock, HIGH);
+}
+void AllLedOff()
+{
+  digitalWrite(accessTrue, LOW);
+  digitalWrite(accessFalse, LOW);
+  digitalWrite(WifiRed, LOW);
+  digitalWrite(WifiYellow, LOW);
+  digitalWrite(WifiGreen, LOW);
+  digitalWrite(lock, LOW);
+}
 
 void setup() {
   Serial.begin(115200);
@@ -538,7 +587,13 @@ void setup() {
   pinMode(WifiYellow, OUTPUT);
   pinMode(WifiRed, OUTPUT);
 
-  Serial.println("Pinek beallitasa sikeres.");
+  Serial.println("Pinek beallitasa sikeres. \nPinTest...");
+  
+  AllLedOn();
+  delay(5000);
+  AllLedOff();
+
+
 
   wifimanager.Begin();
   timeManager.Begin();
@@ -549,9 +604,10 @@ void setup() {
     thisReader.save();
   }
 
-  GetReaderDataURL = "http://www.szakdolgozat.robin-mizere.hu/readerdata?id=" + String(Reader::ID);
-
-  Serial.println(timeManager.GetDateTimeString());
+  GetReaderDataURL = "http://szakdolgozat.robin-mizere.hu/getreaderdata.php?id=" + String(Reader::ID);
+  wifimanager.GetData();
+  thisReader.save();
+  //Serial.println(timeManager.GetDateTimeString());
 }
 
 void loop() {
@@ -560,9 +616,10 @@ void loop() {
 
     if (timeManager.IsInRange(Reader::FROM, Reader::TO)) {
       unsigned long startMs = millis();
-
-      while (millis() - startMs < 300000UL) {
+      Serial.println("Olvasó aktív.");
+      while (millis() - startMs < 30000UL) {
         pn.ReadTag();
+        delay(500);
       }
 
       wifimanager.GetData();
@@ -576,6 +633,12 @@ void loop() {
   else{
     Serial.println("Reader set to inactive. Idling...");
     wifimanager.GetData();
-    delay(36000);
+    unsigned long startMs = millis();
+    while (millis() - startMs < 30000UL) {
+      digitalWrite(accessFalse, HIGH);
+      delay(1000);
+      digitalWrite(accessFalse, LOW);  
+      delay(1000);
+    }
   }
 }

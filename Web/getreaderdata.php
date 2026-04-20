@@ -13,6 +13,6 @@ if(isset($_GET['id'])){
         'to' => $newReader->GetTo(),
         'abs' => $newReader->IsRoleAbs()
     );
-    echo json_encode($arr);
+    echo ("#".json_encode($arr));
 }
 else {echo('Unknown ID');}
