@@ -165,6 +165,7 @@ class OutputManager{
         digitalWrite(lock, LOW); //Zár
         digitalWrite(accessTrue, LOW); // zöld led
         noTone(buzzer);
+        delay(500);
       }
       else{
         digitalWrite(lock, LOW); //Zár
@@ -174,6 +175,7 @@ class OutputManager{
         tone(buzzer, 250, 500);
         digitalWrite(accessFalse, LOW); // piros led
         noTone(buzzer);
+        delay(500);
       }
     }
 };
@@ -458,9 +460,7 @@ class Reader {
       prefs.end();
     }
 
-    void Logic(String tag) {
-      
-    }
+    void Logic(PN& pn);
 };
 
 // Reader statikus adattagok definíciója
@@ -553,6 +553,67 @@ void WifiManager::GetData() {
   Serial.print("TO: ");
   Serial.println(Reader::TO);
 }
+
+void Reader::Logic(PN& pn) {
+  static String lastTag = "";
+  static unsigned long lastReadTime = 0;
+
+  const unsigned long cooldownMs = 3000; // 3 mp
+
+  String tag = pn.ReadTag();
+  if (tag == "") {
+    return;
+  }
+
+  unsigned long now = millis();
+
+  // Ha ugyanaz a kártya jött és még nem telt le a cooldown
+  if (tag == lastTag && now - lastReadTime < cooldownMs) {
+    Serial.println("Ujraolvasas blokkolva.");
+    return;
+  }
+
+  lastTag = tag;
+  lastReadTime = now;
+
+  String url = "http://szakdolgozat.robin-mizere.hu/try4cc3ss.php?in="
+               + String(Reader::ID) + "%23" + tag;
+
+  Serial.println("Request URL:");
+  Serial.println(url);
+
+  HTTPClient http;
+  http.begin(url);
+
+  int httpCode = http.GET();
+
+  if (httpCode != 200) {
+    Serial.print("HTTP hiba: ");
+    Serial.println(httpCode);
+    Serial.println(http.errorToString(httpCode));
+    http.end();
+    return;
+  }
+
+  String response = http.getString();
+  http.end();
+
+  response.trim();
+
+  Serial.print("Response: ");
+  Serial.println(response);
+
+  int result = response.toInt();
+
+  if (result == 1) {
+    Serial.println("ACCESS GRANTED");
+    outputmanager.Access(true);
+  } else {
+    Serial.println("ACCESS DENIED");
+    outputmanager.Access(false);
+  }
+}
+
 void AllLedOn()
 {
   digitalWrite(accessTrue, HIGH);
@@ -618,7 +679,7 @@ void loop() {
       unsigned long startMs = millis();
       Serial.println("Olvasó aktív.");
       while (millis() - startMs < 30000UL) {
-        pn.ReadTag();
+        thisReader.Logic(pn);
         delay(500);
       }
 

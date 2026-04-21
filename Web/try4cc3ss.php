@@ -2,12 +2,11 @@
 $input = $_GET['in'] ?? null;
 $readerID = null;
 $rfid = null;
-if(isset($data)){
-    [$readerID, $rfid] = explode("%20%", $input);
-}
-
-
 require_once 'db.php';
+if(isset($input)){
+    [$readerID, $rfid] = explode("#", $input);
+    echo(GetAccess($readerID, $rfid));
+}
+else{echo(00);}
 
-echo(GetAccess($readerID, $rfid));
 ?>

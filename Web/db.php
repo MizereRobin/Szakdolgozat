@@ -13,7 +13,7 @@ if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-echo "<script>console.log('Database Connected successfully');</script>";
+//echo "<script>console.log('Database Connected successfully');</script>";
 
 class Reader{
     public int $id;
@@ -178,28 +178,6 @@ function GetAllAdmins(): array{
     return $admins;
 }
 
-// function GetAccess(int $readerID, int $cardID){
-//     global $conn;
-//     $sql = "SELECT count(u.id) FROM users u inner join readers r on u.role = reader.role WHERE id = ?";
-//     $stmt = $conn->prepare($sql);
-//     $stmt->bind_param("i", $id);
-//     $stmt->execute();
-//     $result = $stmt->get_result();
-
-//     if ($result->num_rows > 0) {
-//         $row = $result->fetch_assoc();
-//         return new Reader(
-//             intval($row["id"]),
-//             $row["name"],
-//             boolval($row["active"]),
-//             intval($row["role"]),
-//             $row["from_date"],
-//             $row["to_date"],
-//             boolval($row["role_abs"])
-//         );
-//     }
-//     return null;
-// }
 function GetUserById(int $id): ?User {
     global $conn;
     $sql = "SELECT id, name, rfid, role FROM users WHERE id = ?";
@@ -219,12 +197,32 @@ function GetUserById(int $id): ?User {
     }
     return null;
 }
-function GetUserRoleByRFID(int $rfid){
+function GetUserIdByRFID(string $rfid){
+    //echo("#########".$rfid);
+    global $conn;
+    
+    $sql = "SELECT id FROM users WHERE rfid = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("s", $rfid);
+    $stmt->execute();
+
+    $result = $stmt->get_result();
+
+    if ($row = $result->fetch_assoc()) {
+        //echo("###".$row['id']);
+        return $row['id'];
+
+    }
+
+    return null;
+}
+
+function GetUserRoleByRFID(string $rfid){
     global $conn;
 
     $sql = "SELECT role FROM users WHERE rfid = ?";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $rfid);
+    $stmt->bind_param("s", $rfid);
     $stmt->execute();
 
     $result = $stmt->get_result();
@@ -235,21 +233,24 @@ function GetUserRoleByRFID(int $rfid){
 
     return null;
 }
-function GetAccess(int $readerID, int $rfid){
+function GetAccess(int $readerID, string $rfid){
     $userRole = GetUserRoleByRFID($rfid);
     $currentReader = GetReaderById($readerID);
     $readerRole = $currentReader->GetRole();
     $readerIsActive = $currentReader->IsActive();
     $readerIsAbs = $currentReader->IsRoleAbs();
-
+    $success = 0;
     if($readerIsActive){
         if($readerIsAbs){
-            if($userRole == $readerRole){return 1;} return 0;
+            if($userRole == $readerRole){$success = 1;}
         }
-        if($userRole >= $readerRole){return 1;} return 0;
+        elseif($userRole >= $readerRole){$success= 1;}
     }
-    return 0;
+    AddLog($readerID,GetUserIdByRFID($rfid),$success);
+
+    return $success;
 }
+
 function GetLastReader(): ?int {
     global $conn;
     $sql = "SELECT MAX(id) FROM readers";
@@ -309,6 +310,16 @@ function AddReader(string $name): int {
     $sql = "INSERT INTO readers (name) VALUES (?)";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("s", $name);
+    if ($stmt->execute()) {
+        return $stmt->insert_id;
+    }
+    return -1;
+}
+function AddLog(int $readerId, int $userId, int $success){
+    global $conn;
+    $sql = "INSERT INTO `reader_logs`(`reader_id`, `user_key_id`, `success`) VALUES (?,?,?)";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("iii", $readerId, $userId, $success);
     if ($stmt->execute()) {
         return $stmt->insert_id;
     }
