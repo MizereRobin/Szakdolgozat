@@ -11,9 +11,9 @@ echo('<table class="table table-dark table-striped table-hover" style="margin:5%
     <tr>
       <th scope="col">ID</th>
       <th scope="col">Reader id</th>
-      <th scope="col">user_id</th>
-      <th scope="col">time</th>
-      <th scope="col">succ</th>
+      <th scope="col">User_id</th>
+      <th scope="col">Time</th>
+      <th scope="col">Succcess</th>
     </tr>
   </thead>
   <tbody>');
@@ -25,7 +25,7 @@ foreach ($logs as $log) {
     <td>'.$log["reader_id"].'</td>
     <td>'.$log["user_id"].'</td>
     <td>'.$log["time"].'</td>
-    <td>'.$log["success"].'</td>
+    <td '.($log["success"]?'style="color: green;">True':'style="color: red;">False').'</td>
   </tr>');
 }   //id reader_id user_key_id time success
 echo(' </tbody>

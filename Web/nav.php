@@ -41,7 +41,7 @@ if($role=="1"){$disabled = "nav-link";} ?>
       </ul>
       <form class="d-flex" role="search">
         
-         <a href="logout.php">Log Out</a> 
+         <a class="btn btn-danger" href="logout.php">Log Out</a> 
       </form>
     </div>
   </div>
